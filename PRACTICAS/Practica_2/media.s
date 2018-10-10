@@ -1,6 +1,6 @@
 .section .data
 #ifndef TEST
-#define TEST 4
+#define TEST 9
 #endif
 
 	.macro linea
@@ -11,20 +11,18 @@
 	#elif TEST==3
 		.int 0x10000000, 0x10000000, 0x10000000, 0x10000000
 	#elif TEST==4
-		.int 5000000000, 5000000000, 5000000000, 5000000000
+		.int 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
 	#elif TEST==5
-		.int 100, 100, 100, 100
+		.int -1, -1, -1, -1
 	#elif TEST==6
-		.int 3, 3, 3, 3
+		.int 200 000 000, 200 000 000, 200 000 000, 200 000 000
 	#elif TEST==7
-		.int 10, 10, 10, 10
+		.int 300 000 000, 300 000 000, 300 000 000, 300 000 000
 	#elif TEST==8
-		.int 0x100, 0x100, 0x100, 0x100
-	#elif TEST==9
-		.int 0x10, 0x10, 0x10, 0x10
+		.int 5 000 000 000, 5 000 000 000, 5 000 000 000, 5 000 000 000
 	
 	#else 
-		.error "Definir TEST entre 1 ... 9"
+		.error "Definir TEST entre 1 ... 8"
 	#endif
 		.endm
 
@@ -34,9 +32,9 @@ lista:		.irpc i, 1234
 
 longlista:	.int   (.-lista)/4
 resultado:	.quad   0
-  formato: 	.ascii	"resultado \t =  %18lu (uns) \n"
-				.ascii			  "\t\t = 0x18lx (hex) \n"
-				.asciz			  "\t\t = 0x %08x %08x \n"
+  formato: 	.ascii	"resultado \t =   %18lu (uns) \n"
+				.ascii			  "\t\t = 0x%18lx (hex) \n"
+				.asciz			  "\t\t = 0x  %08x %08x \n"
 
 # 4) gcc media.s -o media -no-pie
 
