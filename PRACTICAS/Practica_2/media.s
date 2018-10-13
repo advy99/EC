@@ -1,3 +1,16 @@
+
+#Para probar la bateria de test
+
+#for i in $(seq 1 19); do
+#rm media
+#gcc -x assembler-with-cpp -D TEST=$i -no-pie media.s -o media
+#printf "__TEST%02d__%35s\n" $i "" | tr " " "-" ; ./media
+#done
+
+
+#Antonio David Villegas Yeguas  --- 2B - Grupo practicas 2
+
+
 .section .data
 #ifndef TEST
 #define TEST 20
@@ -21,7 +34,7 @@
 	#elif TEST==8
 		.int -2000000000, -2000000000, -2000000000, -2000000000
 	#elif TEST==9
-		.int -3000000000, -3000000000, -3000000000, -3000000000
+		.int -3000000000, -3000000000, -3000000000, -3000000000       #ocurrira un error por el truncamiento
 	#endif
 		.endm
 
@@ -54,7 +67,7 @@
 
 
 	#else 
-		.error "Definir TEST entre 1 ... 8"
+		.error "Definir TEST entre 1 ... 19"
 	#endif
 		.endm
 
@@ -73,7 +86,7 @@ formatoq:	.ascii   "\n\ncalculos realizados con registros de 64 bits \n"
 				.ascii	"media \t = %11d \t resto \t = %11d  \n"   
 				.asciz			"\t = 0x %08x \t    \t = %08x \n\n"
 
-# 4) gcc media.s -o media -no-pie
+# gcc media.s -o media -no-pie
 
 .section .text
 main: .global  main
@@ -101,6 +114,8 @@ main: .global  main
 	mov  longlista, %ecx  #recuperamos la longitud de la lista
 								 #la perdimos al usar printf
 
+	#hacemos todo de nuevo, solo que con 64 bits
+
 	call sumaq
 	call calc_mediaq
 	mov %edx, resto
@@ -109,8 +124,8 @@ main: .global  main
 	mov   $formatoq, %rdi #primer parametro, el formato
 	mov   media,%rsi #segundo parametro, resultado en decimal
 	mov   resto,%rdx #tercer parametro, resultado en hexadecimal
-	mov   media,%rcx #cuarto parametro, LSB en hexadecimal (recordar little-endian)
-	mov   resto,%r8 #quito paremetro, MSB en hexadecimal 
+	mov   media,%rcx #cuarto parametro
+	mov   resto,%r8 #quinto paremetro
 	
 	mov          $0,%eax	# varargin sin xmm
 	call  printf		# == printf(formato, res, res);
@@ -135,18 +150,18 @@ suma:
 	mov  $0, %esi
 
 bucle:
-	mov  (%rbx,%rsi,4), %eax
-	cltd #extension de signo EDX:EAX <- EAX
+	mov  (%rbx,%rsi,4), %eax  #leemos valor
+	cltd                      #extension de signo EDX:EAX <- EAX
 
-	add  %eax, %ebp
+	add  %eax, %ebp           #sumamos en ebp
 
-	adc 	%edx, %edi
+	adc 	%edx, %edi          #sumamos a la extension de signo acarreo, lo guardamos en edi
 
 	inc 	%rsi
 	cmp   %rsi,%rcx
 	jne    bucle
 
-	mov  %edi, %edx
+	mov  %edi, %edx			 #dejamos los valores en edx y eax
 	mov  %ebp, %eax
 
 	pop %rdi
@@ -157,7 +172,7 @@ bucle:
 
 calc_media:
 	idiv	 %ecx  # %edx <- RDX:RAX mod ECX
-				    # %eda <- RDX:RAX / ECX
+				    # %eax <- RDX:RAX / ECX
 
 	ret
 
@@ -173,12 +188,12 @@ sumaq:
 	mov $0, %edx
 
 bucleq:
-	mov  (%rbx,%rdx,4), %eax
-	cltq  # RAX <- ExtSng(EAX)
+	mov  (%rbx,%rdx,4), %eax #leemos el valor
+	cltq                     # extendemos con signo RAX <- ExtSng(EAX)
 
-	add %rax, %rdi
+	add %rax, %rdi           #lo sumamos con 64 bits
 
-	inc %rdx
+	inc %rdx						 #sumamos 1 a los valores sumados
 	cmp %rdx, %rcx
 	jne bucleq
 
@@ -191,7 +206,87 @@ bucleq:
 
 
 calc_mediaq:
-	cqto #extendemos con signo RDX:RAX <- RAX
-	idiv  %rcx
+	cqto          #extendemos con signo RDX:RAX <- RAX
+	idiv  %rcx	  # %rdx <- RDX:RAX mod RCX
+				     # %rax <- RDX:RAX / RCX
 
 	ret
+
+
+
+#A continuacion, pondre en comentarios, las soluciones por apartado, el apartado 5.4 esta en la solucion (funcion suma)
+#																								apartado 5.5 esta en la solucion (funcion sumaq)
+
+#Apartado 5.1
+
+#suma:
+#	mov  $0, %eax
+#	mov  $0, %rdx
+#	
+#	mov $0, %rsi
+#
+#bucle:
+#	add  (%rbx,%rsi,4), %eax
+#
+#	jnc	sin_acarreo
+#	inc   %rdx        #cuando hay acarreo, sumamos a la segunda seccion
+#sin_acarreo:
+#	inc 	%rsi
+#	cmp   %rsi,%rcx
+#	jne    bucle
+#
+#	ret
+
+
+#Apartado 5.2
+
+#suma:
+#	mov  $0, %eax
+#	mov  $0, %rdx
+#	
+#	mov $0, %rsi
+#
+#bucle:
+#	add  (%rbx,%rsi,4), %eax	#sumamos en EAX
+#
+#	adc 	$0, %edx					#sumamos el acarreo en EDX
+#
+#	inc 	%rsi
+#	cmp   %rsi,%rcx
+#	jne    bucle
+
+#	ret
+
+
+#Apartado 5.3
+
+#suma:
+#	push %rbp
+#	push %rdi
+
+#	mov  $0, %eax
+#	mov  $0, %edx
+#	mov  $0, %ebp
+
+#	mov  $0, %edi
+	
+#	mov  $0, %esi
+
+#bucle:
+#	mov  (%rbx,%rsi,4), %eax
+#	cltd	                        #extendemos con signo EDX:EAX <- EAX
+#	add  %eax, %ebp
+#
+#	adc 	%edx, %edi					#sumamos con acarreo a la extension de signo
+#
+#	inc 	%rsi
+#	cmp   %rsi,%rcx
+#	jne    bucle
+#
+#	mov  %edi, %edx
+#	mov  %ebp, %eax
+#
+#	pop %rdi
+#	pop %rbp
+#
+#	ret
