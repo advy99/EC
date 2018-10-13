@@ -69,6 +69,10 @@ resto: 		.int    0
 formato: 	.ascii	"media \t = %11d \t resto \t = %11d  \n"   
 				.asciz			"\t = 0x %08x \t    \t = %08x \n"
 
+formatoq:	.ascii   "\n\ncalculos realizados con registros de 64 bits \n"
+				.ascii	"media \t = %11d \t resto \t = %11d  \n"   
+				.asciz			"\t = 0x %08x \t    \t = %08x \n\n"
+
 # 4) gcc media.s -o media -no-pie
 
 .section .text
@@ -78,20 +82,36 @@ main: .global  main
 	mov  longlista, %ecx
 	call suma		# == suma(&lista, longlista);
 
-
 	call calc_media
 	mov %edx, resto
 	mov %eax, media
-
 
    #imprimir usando libC
 
 	mov   $formato, %rdi #primer parametro, el formato
 	mov   media,%rsi #segundo parametro, resultado en decimal
 	mov   resto,%rdx #tercer parametro, resultado en hexadecimal
+	mov   media,%rcx #cuarto parametro
+	mov   resto,%r8 #quinto paremetro
+
+	mov          $0,%eax	# varargin sin xmm
+	call  printf		# == printf(formato, res, res);
+
+
+	mov  longlista, %ecx  #recuperamos la longitud de la lista
+								 #la perdimos al usar printf
+
+	call sumaq
+	call calc_mediaq
+	mov %edx, resto
+	mov %eax, media
+
+	mov   $formatoq, %rdi #primer parametro, el formato
+	mov   media,%rsi #segundo parametro, resultado en decimal
+	mov   resto,%rdx #tercer parametro, resultado en hexadecimal
 	mov   media,%rcx #cuarto parametro, LSB en hexadecimal (recordar little-endian)
 	mov   resto,%r8 #quito paremetro, MSB en hexadecimal 
-
+	
 	mov          $0,%eax	# varargin sin xmm
 	call  printf		# == printf(formato, res, res);
 
@@ -137,6 +157,41 @@ bucle:
 
 calc_media:
 	idiv	 %ecx  # %edx <- RDX:RAX mod ECX
-				  # %eda <- RDX:RAX / ECX
+				    # %eda <- RDX:RAX / ECX
+
+	ret
+
+
+
+sumaq:
+
+	push %rdx
+	push %rdi
+	
+	mov $0, %eax
+	mov $0, %edi
+	mov $0, %edx
+
+bucleq:
+	mov  (%rbx,%rdx,4), %eax
+	cltq  # RAX <- ExtSng(EAX)
+
+	add %rax, %rdi
+
+	inc %rdx
+	cmp %rdx, %rcx
+	jne bucleq
+
+	mov %rdi, %rax
+
+	pop %rdi
+	pop %rdx
+	ret
+
+
+
+calc_mediaq:
+	cqto #extendemos con signo RDX:RAX <- RAX
+	idiv  %rcx
 
 	ret
